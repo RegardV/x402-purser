@@ -2,7 +2,24 @@
   "name": "x402-purser",
   "version": "0.1.0",
   "description": "A local daemon that holds the wallet key and decides whether an agent may spend, so the agent cannot decide for itself.",
+  "keywords": [
+    "x402",
+    "agent",
+    "payments",
+    "policy",
+    "eip-3009",
+    "mcp"
+  ],
+  "homepage": "https://github.com/RegardV/x402-purser#readme",
+  "bugs": {
+    "url": "https://github.com/RegardV/x402-purser/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RegardV/x402-purser.git"
+  },
   "license": "MIT",
+  "author": "RegardV",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +29,12 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "purser": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=24"
   },
@@ -20,7 +43,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@x402/core": "2.19.0",
@@ -31,19 +55,5 @@
     "typescript": "^5.9.3",
     "vitest": "^2.1.9",
     "@types/node": "^24.0.0"
-  },
-  "bin": {
-    "purser": "./dist/cli.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "x402",
-    "agent",
-    "payments",
-    "policy",
-    "eip-3009",
-    "mcp"
-  ]
+  }
 }
