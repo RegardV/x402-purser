@@ -169,3 +169,40 @@ export function admit(
 
   return { intentId: intent, attemptNo, reservationId, quote, agentId: agent.agentId, principalId };
 }
+
+/** Minimal shape we consume from @x402/core's PaymentRequirements. */
+export interface RequirementsLike {
+  readonly scheme: string;
+  readonly network: string;
+  readonly asset: string;
+  readonly amount: string;
+  readonly payTo: string;
+  readonly maxTimeoutSeconds: number;
+}
+
+/**
+ * Maps the seller's own requirements into a Quote.
+ *
+ * Everything here comes from the 402 response. Nothing comes from the agent, because an agent
+ * that supplied payTo could name an allowed host and substitute its own address.
+ */
+export function quoteFromRequirements(
+  requirements: RequirementsLike,
+  currency: string,
+  now: () => Date = () => new Date(),
+): Quote {
+  if (requirements.scheme !== 'exact') {
+    throw new GateRefusedError('insecure_scheme', `unsupported scheme ${requirements.scheme}`);
+  }
+  if (!ATOMIC_PATTERN.test(requirements.amount)) {
+    throw new GateRefusedError('exceeds_per_transaction_limit', `malformed amount ${requirements.amount}`);
+  }
+  return {
+    priceAtomic: requirements.amount,
+    currency,
+    payTo: requirements.payTo,
+    asset: requirements.asset,
+    network: requirements.network,
+    validBefore: Math.floor(now().getTime() / 1000) + requirements.maxTimeoutSeconds,
+  };
+}
