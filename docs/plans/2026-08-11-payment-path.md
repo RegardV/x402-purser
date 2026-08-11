@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Apache-2.0. No InFlow code, packages or references anywhere in `src/`. Gated by grep.
-- **No em-dashes in any file.** `grep -rc '' src test` must return zero everywhere.
+- **No em-dashes in any file.** `grep -rcP '\\x{2014}' src test` must return zero everywhere.
 - Amounts are decimal strings compared as `BigInt`. No value passes through a float.
 - The quote never comes from the agent. `payTo`, `amount` and `asset` are read from the seller's own 402 response. An agent supplying them could name an allowed host and substitute its own address.
 - Test count must not drop below the 100 carried into the extraction.
@@ -1220,7 +1220,7 @@ Expected: at least 121 tests passing (100 carried plus 21 added), zero failures,
 - [ ] **Step 5: Check the standing rules, then commit**
 
 ```bash
-grep -rc '' src test | grep -v ':0' && echo "EM-DASHES FOUND, fix before committing" || echo "no em-dashes"
+grep -rlP '\\x{2014}' src test && echo 'EM-DASHES FOUND, fix before committing' || echo 'no em-dashes'
 grep -ril inflow src test || echo "no inflow references"
 git add -A
 git commit -m "test: adversarial pass over the payment path
