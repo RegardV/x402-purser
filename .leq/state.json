@@ -1,0 +1,13 @@
+{
+  "E": 66.68633104092514,
+  "agents": {
+    "main": {
+      "E": 66.68633104092514,
+      "weight": 1.0,
+      "cooperations": 3,
+      "defections": 0,
+      "last": "proceed"
+    }
+  },
+  "last_veto": null
+}
