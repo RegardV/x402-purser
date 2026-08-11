@@ -1,8 +1,8 @@
 {
-  "name": "purser",
+  "name": "x402-purser",
   "version": "0.1.0",
-  "description": "Per-agent spend policy and an x402 signer. Agents get instruments, not your wallet.",
-  "license": "Apache-2.0",
+  "description": "A local daemon that holds the wallet key and decides whether an agent may spend, so the agent cannot decide for itself.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -37,5 +37,13 @@
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "x402",
+    "agent",
+    "payments",
+    "policy",
+    "eip-3009",
+    "mcp"
   ]
 }
