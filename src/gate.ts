@@ -96,13 +96,22 @@ function hostOf(resourceUrl: string): string {
  * nothing yet to resolve it from. Task 11 replaces this with the principal the daemon unlocked; it must not survive
  * past that task.
  */
-export function admit(
-  deps: GateDeps,
-  claim: PaymentClaim,
-  signature: string,
-  quote: Quote,
-  intentId: number | null,
-): GateDecision {
+export interface AuthenticatedAgent {
+  readonly principalId: number;
+  readonly agent: ReturnType<AgentStore['describe']>;
+  readonly now: Date;
+  readonly host: string;
+}
+
+/**
+ * Proves who is asking, before anything is fetched or signed.
+ *
+ * Split out of admit because these checks do not depend on a quote, and a free resource must not
+ * skip them: the signature is the agent's authentication for the whole request, not just for the
+ * payment. Calling pay() on a 200 resource without this would let anyone holding the socket drive
+ * arbitrary fetches, including an agent whose key has been revoked.
+ */
+export function authenticate(deps: GateDeps, claim: PaymentClaim, signature: string): AuthenticatedAgent {
   const principalId = 1;
   const agent = deps.store.describe(principalId, claim.agentRef);
 
@@ -120,14 +129,29 @@ export function admit(
     throw new GateRefusedError('agent_revoked', `revoked at ${agent.revokedAt}`);
   }
 
-  const host = hostOf(claim.resourceUrl);
   const envelope = agent.envelope;
   if (envelope.expiresAt !== null && now.getTime() > Date.parse(envelope.expiresAt)) {
     throw new GateRefusedError('envelope_expired', envelope.expiresAt);
   }
+
+  const host = hostOf(claim.resourceUrl);
   if (!envelope.allowedHosts.includes(host)) {
     throw new GateRefusedError('host_not_allowed', host);
   }
+
+  return { principalId, agent, now, host };
+}
+
+export function admit(
+  deps: GateDeps,
+  claim: PaymentClaim,
+  signature: string,
+  quote: Quote,
+  intentId: number | null,
+): GateDecision {
+  const { principalId, agent, now } = authenticate(deps, claim, signature);
+  const envelope = agent.envelope;
+
   if (!envelope.allowedCurrencies.includes(quote.currency)) {
     throw new GateRefusedError('currency_not_allowed', quote.currency);
   }

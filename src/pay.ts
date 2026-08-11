@@ -8,7 +8,7 @@
 
 import { x402HTTPClient } from '@x402/core/client';
 import { buildClient, type PendingRequest, type PurserClientDeps } from './client.js';
-import type { GateDecision } from './gate.js';
+import { authenticate, type GateDecision } from './gate.js';
 
 export type PayResult =
   | { readonly status: 'paid'; readonly body: string; readonly decision: GateDecision }
@@ -23,6 +23,14 @@ export async function pay(
 ): Promise<PayResult> {
   const { client, decisions } = buildClient(deps, pending);
   const http = new x402HTTPClient(client);
+
+  // Authenticate before touching the network. A free resource must not be a way to skip the
+  // signature check, or the socket becomes an unauthenticated fetch proxy.
+  try {
+    authenticate(deps, pending.claim, pending.signature);
+  } catch (cause) {
+    return { status: 'refused', reason: cause instanceof Error ? cause.message : String(cause) };
+  }
 
   const probe = await fetchImpl(pending.claim.resourceUrl);
   if (probe.status !== 402) {
