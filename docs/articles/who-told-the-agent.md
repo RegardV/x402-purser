@@ -60,7 +60,7 @@ This is a boundary rather than a defect. Payment policy at the HTTP layer govern
 
 ## Where this leaves us
 
-We have built the enforcement layer described above and released it as Purser: a local daemon holding the key, agents talking to it over a unix socket with signed requests, per-agent envelopes bounded by a pooled account allowance, reserve-then-confirm accounting, and the quote read from the seller rather than accepted from the agent. It has an adversarial test suite whose premise is that the agent fully controls its own process and still cannot exceed its envelope.
+We have built the enforcement layer described above and released it as [Purser](https://github.com/RegardV/x402-purser), MIT licensed: a local daemon holding the key, agents talking to it over a unix socket with signed requests, per-agent envelopes bounded by a pooled account allowance, reserve-then-confirm accounting, and the quote read from the seller rather than accepted from the agent. It has an adversarial test suite whose premise is that the agent fully controls its own process and still cannot exceed its envelope.
 
 What it does not yet have is a real on-chain payment. Everything to date is verified against stubs and the reference implementation, which is enough to prove the policy logic and not enough to prove the money moves. That is the next piece of work, and I would rather say so than let a test count imply more than it earns.
 
