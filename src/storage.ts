@@ -147,3 +147,18 @@ export function openRepository(databasePath: string): Repository {
     close: () => db.close(),
   };
 }
+
+/**
+ * Creates the principal if it is not already there, and returns its id.
+ *
+ * v1 serves one principal, the owner of the unlocked wallet, so this is idempotent by label rather
+ * than a general principal registry.
+ */
+export function ensurePrincipal(repo: Repository, label: string): number {
+  const db = repo.rawDatabase();
+  const existing = db.prepare('SELECT id FROM principals WHERE label = ?').get(label) as { id: number } | undefined;
+  if (existing !== undefined) return existing.id;
+  db.prepare('INSERT INTO principals (label, created_at) VALUES (?, ?)').run(label, new Date().toISOString());
+  const created = db.prepare('SELECT id FROM principals WHERE label = ?').get(label) as { id: number };
+  return created.id;
+}

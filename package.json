@@ -16,9 +16,11 @@
     "node": ">=24"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@x402/core": "2.19.0",
@@ -29,5 +31,11 @@
     "typescript": "^5.9.3",
     "vitest": "^2.1.9",
     "@types/node": "^24.0.0"
-  }
+  },
+  "bin": {
+    "purser": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ]
 }

@@ -1,4 +1,2 @@
-node_modules/
 dist/
-*.sqlite3*
-.algl/
+node_modules/
