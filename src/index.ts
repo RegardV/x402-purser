@@ -24,3 +24,18 @@ export type { GateDecision, GateDeps, GateRefusal, Quote } from './gate.js';
 
 export { openRepository } from './storage.js';
 export type { Repository, SqliteDatabase, SqliteStatement } from './storage.js';
+
+export { WalletLockedError, unlockWallet } from './wallet.js';
+export type { TypedDataMessage, Wallet } from './wallet.js';
+
+export { buildClient } from './client.js';
+export type { PendingRequest, PurserClientDeps } from './client.js';
+
+export { pay } from './pay.js';
+export type { PayResult } from './pay.js';
+
+export { PURSER_PROTOCOL_VERSION, startServer } from './server.js';
+export type { PurserServer, PurserServerDeps } from './server.js';
+
+export { authenticate, quoteFromRequirements } from './gate.js';
+export type { AuthenticatedAgent, RequirementsLike } from './gate.js';

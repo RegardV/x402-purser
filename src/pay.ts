@@ -50,7 +50,16 @@ export async function pay(
     const payload = await http.createPaymentPayload(paymentRequired);
     headers = http.encodePaymentSignatureHeader(payload);
   } catch (cause) {
-    // A gate refusal surfaces as a thrown abort from inside the hook.
+    // A gate refusal surfaces as a thrown abort from inside the hook, and reserves nothing. But a
+    // failure after the gate admitted, a locked wallet being the obvious one, leaves a reservation
+    // holding budget for a payment that will never happen. Release it rather than burn the pool.
+    const admitted = decisions[decisions.length - 1];
+    if (admitted !== undefined) {
+      deps.ledger.release(admitted.reservationId, {
+        agentId: admitted.agentId,
+        principalId: admitted.principalId,
+      });
+    }
     return { status: 'refused', reason: cause instanceof Error ? cause.message : String(cause) };
   }
 
