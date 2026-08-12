@@ -19,6 +19,7 @@ import { AgentLedger } from './ledger.js';
 import { IntentStore } from './intent.js';
 import { unlockWallet } from './wallet.js';
 import { startServer } from './server.js';
+import { connectSignerWallet } from './socket-wallet.js';
 import { currencyForAsset } from './currency.js';
 import type { Envelope } from './envelope.js';
 
@@ -142,12 +143,17 @@ async function cmdAgentRevoke(argv: string[]): Promise<void> {
 }
 
 async function cmdRun(argv: string[]): Promise<void> {
-  const { values } = parseArgs({ args: argv, options: { socket: { type: 'string' }, db: { type: 'string' } } });
+  const { values } = parseArgs({ args: argv, options: {
+    socket: { type: 'string' }, db: { type: 'string' }, 'signer-socket': { type: 'string' } } });
   const socketPath = values.socket ?? join(homedir(), '.purser', 'purser.sock');
   const databasePath = values.db ?? defaultDatabase();
 
-  const key = await readSecret('wallet private key (input hidden): ');
-  const wallet = unlockWallet(key);
+  // With a signer socket the key never enters this process at all.
+  const signerSocket = values['signer-socket'];
+  const wallet =
+    signerSocket === undefined
+      ? unlockWallet(await readSecret('wallet private key (input hidden): '))
+      : await connectSignerWallet(signerSocket);
 
   const repo = openRepository(databasePath);
   const now = () => new Date();
@@ -186,8 +192,9 @@ const USAGE = `purser <command>
   agent list [--all]
   agent revoke <agent_ref>
 
-  run [--socket PATH]
-      Start the daemon. Reads the wallet key from stdin, never from a flag.
+  run [--socket PATH] [--signer-socket PATH]
+      Start the daemon. With --signer-socket the key never enters this process.
+      Without it, the wallet key is read from stdin, never from a flag.
 
 Amounts are atomic units. --db or PURSER_DB overrides the database path.
 `;

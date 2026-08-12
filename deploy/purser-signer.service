@@ -1,0 +1,40 @@
+[Unit]
+Description=Purser signer, holds the wallet key and signs only EIP-3009 payments
+Before=purser.service
+
+[Service]
+Type=simple
+User=purser-signer
+Group=purser
+UMask=0007
+ExecStart=/usr/local/bin/purser-signer --socket /run/purser/signer.sock --tokens 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --chains 8453 --max-value 5000000
+LoadCredentialEncrypted=key:/etc/purser/key.cred
+StandardInput=file:/run/credentials/purser-signer.service/key
+RuntimeDirectory=purser
+RuntimeDirectoryMode=0770
+
+# The reason this split is worth doing. No network namespace means a compromised signer
+# cannot post the key anywhere; it can only answer on the socket.
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectProc=invisible
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

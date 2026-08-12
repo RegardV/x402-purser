@@ -30,7 +30,8 @@
     }
   },
   "bin": {
-    "purser": "./dist/cli.js"
+    "purser": "./dist/cli.js",
+    "purser-signer": "./dist/signer/cli.js"
   },
   "files": [
     "dist"

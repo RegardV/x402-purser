@@ -60,6 +60,12 @@ Being precise about this matters more than the feature list, because a spend lim
 - **It does not stop a seller overcharging within your ceiling.** If you authorise up to 5 USDC and the seller quotes 4.99, that is a valid payment. Envelopes bound exposure, they do not negotiate.
 - **There is no human approval path in v1.** Every request gets a terminal yes or no from policy alone. Nothing pauses for a person.
 - **It has not been audited.** One author, no external security review.
+- **The signer still holds the key in memory.** It is a far smaller and better contained process
+  than the daemon, with no network access, but it is not a hardware boundary. A YubiHSM 2 supports
+  secp256k1 and fits the same seam when that matters. TPM 2.0 and YubiKey PIV do not; both are NIST
+  curve devices and cannot sign secp256k1.
+- **A compromised daemon can still cause payments that were already inside policy.** That is
+  inherent: authorising payments is its job.
 - **It serves one principal and one wallet.** Multi-tenancy is not implemented, and `principalId` is currently hardcoded.
 - **Envelopes are fixed at issue time.** Changing a limit means revoking the agent and issuing a new one.
 
@@ -151,7 +157,8 @@ An **intent** is one thing the agent wants to buy, up to a ceiling. An **attempt
 | `purser agent add <label> --cap N --per-tx N --period S --hosts a,b --currencies C [--expires ISO]` | Issues an agent and prints its private key once. |
 | `purser agent list [--all]` | Lists agents. `--all` includes revoked ones. |
 | `purser agent revoke <agent_ref>` | Revokes an agent and everything issued beneath it. |
-| `purser run [--socket PATH]` | Starts the daemon. Reads the wallet key from stdin. |
+| `purser run [--socket PATH] [--signer-socket PATH]` | Starts the daemon. With `--signer-socket` the key never enters this process; without it, the key is read from stdin. |
+| `purser-signer --tokens 0x.. --chains 8453 --max-value N [--socket PATH]` | Starts the signer. Reads the wallet key from stdin and never releases it. |
 
 All amounts are atomic units. `--db` or `PURSER_DB` overrides the database path, which defaults to `~/.purser/purser.db`. The socket defaults to `~/.purser/purser.sock`.
 
@@ -193,7 +200,20 @@ Refusal reasons are stable strings: `bad_signature`, `agent_revoked`, `stale_cla
 
 **What Purser assumes.** The agent is untrusted and may be fully compromised. The operator's user account is trusted. The seller is untrusted but is the only source of prices.
 
-**Key custody.** The wallet key is read from stdin and held in memory only. It is never written to the database, never accepted as a flag, and never read from an environment variable. Flags land in shell history and `ps` output; environment variables are inherited by every child process, which here would mean the agents the daemon exists to constrain. Piping from a password manager is the intended usage.
+**Key custody.** In the recommended deployment the wallet key is not in the Purser daemon at all.
+It lives in a separate `purser-signer` process, running as a different user with no network
+namespace, which will only ever sign an EIP-3009 transfer authorization. Purser sends structured
+typed data over a socket and gets a signature back. It cannot ask for a signature over an arbitrary
+hash, so a compromised daemon cannot have a wallet draining transaction signed. This is stronger
+than a cloud KMS, which signs whatever digest it is given and can only restrict who calls it.
+
+Running `purser run` without `--signer-socket` keeps the key in the daemon, read from stdin. That is
+fine for development and is the weaker configuration. In either case the key is never accepted as a
+flag or an environment variable: flags land in shell history and `ps` output, and environment
+variables are inherited by every child process, which here would mean the agents the daemon exists
+to constrain.
+
+See [deploy/README.md](deploy/README.md) for the two user setup and the hardened unit.
 
 **Socket permissions are the access control.** The socket is created `0600`, so only the owning user can connect. Anyone who can reach the socket can still only act as an agent whose key they hold.
 

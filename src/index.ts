@@ -39,3 +39,10 @@ export type { PurserServer, PurserServerDeps } from './server.js';
 
 export { authenticate, quoteFromRequirements } from './gate.js';
 export type { AuthenticatedAgent, RequirementsLike } from './gate.js';
+
+export { connectSignerWallet } from './socket-wallet.js';
+export { startSigner } from './signer/server.js';
+export type { SignerServer } from './signer/server.js';
+export { SignerRefusedError, validateSigningRequest } from './signer/validate.js';
+export type { SignerPolicy } from './signer/validate.js';
+export { SIGNER_PROTOCOL_VERSION, decodeJson, encodeJson } from './signer/protocol.js';

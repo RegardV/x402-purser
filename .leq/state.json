@@ -1,10 +1,17 @@
 {
-  "E": 66.68633104092514,
+  "E": 36034955.08814164,
   "agents": {
     "main": {
       "E": 66.68633104092514,
-      "weight": 1.0,
+      "weight": 0.0001,
       "cooperations": 3,
+      "defections": 0,
+      "last": "proceed"
+    },
+    "claude": {
+      "E": 540364.9372466919,
+      "weight": 0.9999,
+      "cooperations": 10,
       "defections": 0,
       "last": "proceed"
     }
