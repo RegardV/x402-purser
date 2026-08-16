@@ -1,5 +1,12 @@
 # Privilege Separated Signer Implementation Plan
 
+> **Superseded in part, 2026-08-16.** The security claims in this document were falsified by audit.
+> It states that a compromised Purser "cannot drain the wallet"; in fact the signer had no
+> cumulative limit, so unlimited in-policy signatures could be obtained. Kept unedited as the
+> historical record of what was built and why. The authoritative analysis is
+> [the threat model](../specs/2026-08-16-threat-model.md).
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Move the wallet key out of the Purser daemon into a separate, networkless process that refuses to sign anything except an EIP-3009 payment.

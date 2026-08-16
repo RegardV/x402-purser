@@ -64,8 +64,12 @@ Being precise about this matters more than the feature list, because a spend lim
   than the daemon, with no network access, but it is not a hardware boundary. A YubiHSM 2 supports
   secp256k1 and fits the same seam when that matters. TPM 2.0 and YubiKey PIV do not; both are NIST
   curve devices and cannot sign secp256k1.
-- **A compromised daemon can still cause payments that were already inside policy.** That is
-  inherent: authorising payments is its job.
+- **A compromised daemon can spend up to the signer's limits and choose the recipient.** Per agent
+  envelopes do not constrain it, because it is the component that enforces them. As of 0.1.0 the
+  signer has no cumulative limit, so that is a per payment ceiling repeated as often as the attacker
+  likes.
+- **Nothing detects a drain today.** There is no audit trail and no alerting, so time to detect is
+  bounded only by how often you look.
 - **It serves one principal and one wallet.** Multi-tenancy is not implemented, and `principalId` is currently hardcoded.
 - **Envelopes are fixed at issue time.** Changing a limit means revoking the agent and issuing a new one.
 
@@ -203,9 +207,23 @@ Refusal reasons are stable strings: `bad_signature`, `agent_revoked`, `stale_cla
 **Key custody.** In the recommended deployment the wallet key is not in the Purser daemon at all.
 It lives in a separate `purser-signer` process, running as a different user with no network
 namespace, which will only ever sign an EIP-3009 transfer authorization. Purser sends structured
-typed data over a socket and gets a signature back. It cannot ask for a signature over an arbitrary
-hash, so a compromised daemon cannot have a wallet draining transaction signed. This is stronger
-than a cloud KMS, which signs whatever digest it is given and can only restrict who calls it.
+typed data over a socket and gets a signature back, and cannot ask for a signature over an
+arbitrary hash. That rules out native currency transfers, `approve` calls, and arbitrary contract
+calls. It is stronger than a cloud KMS, which signs whatever digest it is given and can only
+restrict who calls it.
+
+**What that does not rule out, as of 0.1.0.** The signer enforces a per payment ceiling and has no
+cumulative limit, so a compromised daemon can request many in-policy signatures in a row and drain
+the token balance a ceiling at a time. This was found by audit on 2026-08-16 and is being fixed by
+giving the signer a persisted windowed total. Until then, treat the per payment ceiling as the only
+signer side limit and size the wallet accordingly.
+
+**What actually bounds your loss.** Fund the signing wallet with only what you can afford to lose
+in one incident, topped up from a cold reserve out of band. The token contract will not transfer
+what is not there, which makes the hot balance the one control that does not depend on Purser being
+correct. Everything else here reduces blast radius and shortens time to detect. See the
+[threat model](docs/superpowers/specs/2026-08-16-threat-model.md) for the adversaries each control
+answers and for the residual risk.
 
 Running `purser run` without `--signer-socket` keeps the key in the daemon, read from stdin. That is
 fine for development and is the weaker configuration. In either case the key is never accepted as a

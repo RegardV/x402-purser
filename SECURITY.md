@@ -18,7 +18,15 @@ Expect an acknowledgement within a few days. This is a single-author project wit
 
 ## Known limitations
 
-These are documented, not defects. See the README for the full list.
+These are documented, not defects. See the [threat model](docs/superpowers/specs/2026-08-16-threat-model.md)
+for the full analysis.
+
+- **The signer has no cumulative limit (found 2026-08-16, open).** It enforces a ceiling per
+  payment and keeps no running total, so a caller holding the socket can obtain unlimited in-policy
+  signatures to a recipient of its choosing and drain the token balance a ceiling at a time. A
+  proof of concept produced twenty valid authorizations totalling twenty times the ceiling. The fix
+  is a persisted windowed total in the signer. Until it lands, the hot wallet balance is the only
+  effective bound.
 
 - Enforcement exists only at the moment of signing. A signed authorization is valid until it expires regardless of later policy changes.
 - Payments made on other rails are not governed by any envelope here.

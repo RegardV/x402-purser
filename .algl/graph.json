@@ -1,12 +1,11 @@
 {
-  "task": "Implement the privilege separated signer per docs/superpowers/plans/2026-08-12-privilege-separated-signer.md: bigint safe wire codec, policy validator, signer process, socket wallet, purser-signer binary with hardened systemd unit, and wire the daemon to it end to end.",
+  "task": "Write a threat model for Purser that every control traces to, then correct the public claims that the security audit falsified. No code changes in this phase; the build follows after review.",
   "constraints": [
-    "No em-dashes anywhere: code, comments, docs, commit messages.",
-    "The signer must never sign a caller supplied digest. Structured typed data only.",
-    "No new runtime dependencies. Node >= 24.",
-    "Existing 126 tests must not regress.",
-    "Refusal codes are stable lowercase snake_case, matching the GateRefusedError convention.",
-    "Optimise token use, never simplify: do not cut validation, error handling or test coverage to save output."
+    "No em-dashes anywhere.",
+    "State residual risk plainly. No absolute safety claim may survive: loss is bounded by the hot balance, the window and time to detect, not by our code being correct.",
+    "Historical documents (plans, superseded specs) are corrected with a banner rather than silently rewritten.",
+    "No code changes in this phase. The existing 153 tests must still pass untouched.",
+    "Every adversary must carry an explicit loss bound."
   ],
   "scopes": {
     "root": {
@@ -15,151 +14,69 @@
   },
   "nodes": {
     "n1": {
-      "tool": "edit",
-      "desc": "Task 1: bigint safe wire codec src/signer/protocol.ts with encodeJson/decodeJson, plus test/signer-protocol.test.ts",
+      "tool": "write",
+      "desc": "Write docs/superpowers/specs/2026-08-16-threat-model.md: invariant, trust boundaries, enumerated adversaries each with a loss bound, what bounds the loss (hot balance floor, signer window, detection), residual risk, and what we explicitly do not defend against",
       "deps": [],
       "parent": "root",
-      "accept": "A payload round tripped through the codec keeps value/validAfter/validBefore as bigint, keeps chainId a plain number, signs to byte identical bytes as the untouched payload, and a malformed bigint tag throws",
-      "verify": "cd ~/projects/purser && pnpm vitest run test/signer-protocol --reporter=basic",
+      "accept": "The document exists with all six required sections, enumerates at least five adversaries each carrying an explicit 'bounded by' statement, contains no absolute safety claim such as 'cannot drain the wallet', and has no em-dashes",
+      "verify": "cd ~/projects/purser && python3 scripts-algl/check-threat-model.py",
       "artifact": ".algl/results/n1.md",
       "writes": [
-        "src/signer/protocol.ts",
-        "test/signer-protocol.test.ts"
+        "docs/superpowers/specs/2026-08-16-threat-model.md"
       ],
-      "triage": "trivial",
-      "decision": null,
+      "triage": "consequential",
+      "decision": "proceed",
       "gate": {
         "pass": true,
-        "hash": "b2bd23b7044e0610e932c7396bd5b0dcc32795d78bef6a2d5516fc8e880e87bc",
+        "hash": "3a1889aadf0391afb167581a4290f0dd8fe62135aa4d10786a84205d6b15bf8e",
         "source": "command",
-        "detail": "\n RUN  v2.1.9 /home/regard/projects/purser\n\n \u2713 test/signer-protocol.test.ts (4 tests) 92ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  11:21:26\n   Duration  853ms (transform 69ms, setup 0ms, collect 199ms, tests 92ms, environment 0ms, prepare 141ms)\n\n"
+        "detail": "OK: 7 adversaries, each with a stated loss bound\n",
+        "writes": {
+          "docs/superpowers/specs/2026-08-16-threat-model.md": "5047c499b4737b0121782f4f4a886a669ee682bd1e9a824345432b6925078922"
+        }
       },
-      "agent": "claude"
+      "agent": "claude",
+      "decision_writes": {
+        "docs/superpowers/specs/2026-08-16-threat-model.md": null
+      }
     },
     "n2": {
       "tool": "edit",
-      "desc": "Task 2: src/signer/validate.ts with SignerPolicy, SignerRefusedError, validateSigningRequest, plus 11 adversarial tests in test/signer-validate.test.ts",
-      "deps": [],
+      "desc": "Correct the falsified claims: rewrite the README key custody and does-not-claim sections, add the drain finding to SECURITY.md known limitations, and put a superseded banner on the 2026-08-12 signer spec and plan",
+      "deps": [
+        "n1"
+      ],
       "parent": "root",
-      "accept": "Accepts an in-policy payment and refuses each of not_a_payment, unknown_token, unknown_chain, wrong_payer, exceeds_signer_ceiling, bad_validity_window (expired and over horizon), unexpected_types (tampered field type and smuggled extra type) and malformed_message, each with the exact code",
-      "verify": "cd ~/projects/purser && pnpm vitest run test/signer-validate --reporter=basic",
+      "accept": "No live document claims a compromised daemon cannot drain the wallet; README states the bound explicitly and links the threat model; SECURITY.md lists the unbounded cumulative signing finding; both 2026-08-12 documents carry a banner pointing at the threat model; all 153 tests still pass and no em-dashes exist",
+      "verify": "cd ~/projects/purser && ! grep -riq 'cannot drain the wallet' README.md SECURITY.md && grep -q 'threat-model' README.md && grep -qi 'cumulative' SECURITY.md && grep -q 'Superseded' docs/superpowers/specs/2026-08-12-privilege-separated-signer-design.md && grep -q 'Superseded' docs/superpowers/plans/2026-08-12-privilege-separated-signer.md && pnpm vitest run --reporter=basic 2>&1 | grep -q '153 passed' && ! grep -rlP '\\x{2014}' src test docs deploy README.md SECURITY.md",
       "artifact": ".algl/results/n2.md",
       "writes": [
-        "src/signer/validate.ts",
-        "test/signer-validate.test.ts"
-      ],
-      "triage": "consequential",
-      "decision": "proceed",
-      "gate": {
-        "pass": true,
-        "hash": "65e132648c94356b5177d61b31767e92b218846c1297c3f153ca8e7355f991ce",
-        "source": "command",
-        "detail": "\n RUN  v2.1.9 /home/regard/projects/purser\n\n \u2713 test/signer-validate.test.ts (11 tests) 11ms\n\n Test Files  1 passed (1)\n      Tests  11 passed (11)\n   Start at  11:21:29\n   Duration  630ms (transform 76ms, setup 0ms, collect 69ms, tests 11ms, environment 0ms, prepare 154ms)\n\n"
-      },
-      "agent": "claude"
-    },
-    "n3": {
-      "tool": "edit",
-      "desc": "Task 3: src/signer/server.ts startSigner with address and sign ops only, plus test/signer-server.test.ts",
-      "deps": [
-        "n1",
-        "n2"
-      ],
-      "parent": "root",
-      "accept": "Reports its address, signs an in-policy payment to bytes identical to the local key, refuses a transaction shaped payload, refuses an unknown op such as sign_digest, rejects protocol version 99, survives malformed input and keeps serving, and creates the socket mode 0660",
-      "verify": "cd ~/projects/purser && pnpm vitest run test/signer-server --reporter=basic",
-      "artifact": ".algl/results/n3.md",
-      "writes": [
-        "src/signer/server.ts",
-        "test/signer-server.test.ts"
-      ],
-      "triage": "consequential",
-      "decision": "proceed",
-      "gate": {
-        "pass": true,
-        "hash": "8d2e85bcaca73ab2fe39b5c55161e67f326dae6d682f52ea9a96b229b09ca3c6",
-        "source": "command",
-        "detail": "\n RUN  v2.1.9 /home/regard/projects/purser\n\n \u2713 test/signer-server.test.ts (7 tests) 120ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  11:22:48\n   Duration  940ms (transform 107ms, setup 0ms, collect 245ms, tests 120ms, environment 0ms, prepare 146ms)\n\n"
-      },
-      "agent": "claude"
-    },
-    "n4": {
-      "tool": "edit",
-      "desc": "Task 4: src/socket-wallet.ts connectSignerWallet returning a Wallet backed by the signer socket, plus test/socket-wallet.test.ts",
-      "deps": [
-        "n1",
-        "n3"
-      ],
-      "parent": "root",
-      "accept": "Adopts the signer address, produces the same signature the local key would, surfaces a policy refusal as a thrown error rather than a bad signature, and refuses locally once locked with WalletLockedError",
-      "verify": "cd ~/projects/purser && pnpm vitest run test/socket-wallet --reporter=basic",
-      "artifact": ".algl/results/n4.md",
-      "writes": [
-        "src/socket-wallet.ts",
-        "test/socket-wallet.test.ts"
-      ],
-      "triage": "trivial",
-      "decision": null,
-      "gate": {
-        "pass": true,
-        "hash": "88631c6bd13b39b577b0a0545bdb6104c891a19bef554f019951c3eca4ce8777",
-        "source": "command",
-        "detail": "\n RUN  v2.1.9 /home/regard/projects/purser\n\n \u2713 test/socket-wallet.test.ts (4 tests) 115ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  11:23:33\n   Duration  931ms (transform 109ms, setup 0ms, collect 223ms, tests 115ms, environment 0ms, prepare 132ms)\n\n"
-      },
-      "agent": "claude"
-    },
-    "n5": {
-      "tool": "edit",
-      "desc": "Task 5: src/signer/cli.ts purser-signer binary, deploy/purser-signer.service hardened unit, deploy/README.md, bin entry in package.json",
-      "deps": [
-        "n3"
-      ],
-      "parent": "root",
-      "accept": "pnpm build succeeds and the built binary, given the test key on stdin, prints the matching wallet address and listens on the socket; the systemd unit contains PrivateNetwork=yes",
-      "verify": "cd ~/projects/purser && pnpm build >/dev/null 2>&1 && grep -q 'PrivateNetwork=yes' deploy/purser-signer.service && echo '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' | timeout 5 node dist/signer/cli.js --socket /tmp/algl-sig.sock --tokens 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --chains 8453 --max-value 5000 2>&1 | grep -q '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'",
-      "artifact": ".algl/results/n5.md",
-      "writes": [
-        "src/signer/cli.ts",
-        "deploy/purser-signer.service",
-        "deploy/README.md",
-        "package.json"
-      ],
-      "triage": "trivial",
-      "decision": null,
-      "gate": {
-        "pass": true,
-        "hash": "b776c48a3c3c0beab3d160c41867a09f5e6670013e318dad1133b4a377da3a40",
-        "source": "command",
-        "detail": ""
-      },
-      "agent": "claude"
-    },
-    "n6": {
-      "tool": "edit",
-      "desc": "Task 6: wire the daemon with --signer-socket in src/cli.ts, export the surface in src/index.ts, rewrite the README security section, add test/split-e2e.test.ts",
-      "deps": [
-        "n4",
-        "n5"
-      ],
-      "parent": "root",
-      "accept": "The full suite passes with at least 152 tests and zero failures, typecheck and build are clean, pnpm smoke still passes, the README documents the signer deployment and the remaining in-memory limit, and no em-dashes exist in src test docs deploy or README.md",
-      "verify": "cd ~/projects/purser && pnpm vitest run --reporter=basic 2>&1 | grep -qE 'Tests +15[2-9]| 1[6-9][0-9] passed' && pnpm typecheck && pnpm build >/dev/null && pnpm smoke 2>&1 | grep -q 'SMOKE PASS' && ! grep -rlP '\\x{2014}' src test docs deploy README.md",
-      "artifact": ".algl/results/n6.md",
-      "writes": [
-        "src/cli.ts",
-        "src/index.ts",
         "README.md",
-        "test/split-e2e.test.ts"
+        "SECURITY.md",
+        "docs/superpowers/specs/2026-08-12-privilege-separated-signer-design.md",
+        "docs/superpowers/plans/2026-08-12-privilege-separated-signer.md"
       ],
       "triage": "consequential",
       "decision": "proceed",
       "gate": {
         "pass": true,
-        "hash": "7b0abee6ec19c4af847a1fdc1d6288e8ee756f465bb78b124ec5364bce061b2b",
+        "hash": "f18934f636f7e7e16fa2a1e2109d02ebe5816c0778a96e60d68ceec86dd93960",
         "source": "command",
-        "detail": "$ tsc --noEmit\n$ tsc -p tsconfig.build.json\n"
+        "detail": "",
+        "writes": {
+          "README.md": "bd95280b1fb6dbaf6cb1f63666b3b069cd0502a8c5828db55f7c22eca7fbbb6a",
+          "SECURITY.md": "c74c02502c21b18e45d83ef0472a0312521791c8a5bfe923ef3d102679b9ce0f",
+          "docs/superpowers/plans/2026-08-12-privilege-separated-signer.md": "813cff1e3af9dc42f6d8112b247cbdcdc822b3af4383ca2a2b0557b1b453725d",
+          "docs/superpowers/specs/2026-08-12-privilege-separated-signer-design.md": "b992b051bc9f5bf050a6eb9c3254a2c61d366df4e2c2bdb91fb4b8232e7002e4"
+        }
       },
-      "agent": "claude"
+      "agent": "claude",
+      "decision_writes": {
+        "README.md": "b8fc0f91a5cf437a5dbde57fc755adbdc9dd095fb010004dbaf64214782f83ed",
+        "SECURITY.md": "a682122105e5291f171b303d62b46488ca59f283055f01dc3de181636f6ccfe5",
+        "docs/superpowers/plans/2026-08-12-privilege-separated-signer.md": "e0c61ae0f9626fde2c14097d17b430fc47a4827e111e3d9703b0167a3c73eff6",
+        "docs/superpowers/specs/2026-08-12-privilege-separated-signer-design.md": "8c66b169d60419fcf132149248d48de9845b6e4a5b7d267f6ef8ad7d16cb38e8"
+      }
     }
   }
 }
